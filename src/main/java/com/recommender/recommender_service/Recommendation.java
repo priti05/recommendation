@@ -11,17 +11,49 @@ import org.apache.mahout.cf.taste.recommender.RecommendedItem;
 public class Recommendation {
 	
 	
-	public List<IMDBData.MovieRecommendation> getMovieRecommendationByPreference(long uid) throws ClassNotFoundException, SQLException, IOException, TasteException{
+	public List<IMDBData.MovieRecommendation> getMovieRecommendationByPreference(long uid, List<Integer> tagIds) throws ClassNotFoundException, SQLException, IOException, TasteException{
+		RecommendationHelper recommendationHelper = new RecommendationHelper();
+		if(tagIds!=null && tagIds.size()>0){
+			recommendationHelper.updatePreferences(tagIds, uid);;
+		}
+		List<IMDBData.MovieRecommendation> movies = new LinkedList<>();
+		String fileName = recommendationHelper.createMovieFile(uid, null, RecommenderConstant.PREFERENCE);
+		List<RecommendedItem> recommendationItems = recommendationHelper.getFileBasedRecommendation(fileName, uid);
+		for(RecommendedItem recommendedItem:recommendationItems){
+			movies.add(recommendationHelper.buildIMDBData(recommendedItem));
+		}
+		return movies;
+	}
+	
+	
+	public List<IMDBData.MovieRecommendation> getMovieRecommendation(long uid) throws ClassNotFoundException, SQLException, IOException, TasteException{
 		List<IMDBData.MovieRecommendation> movies = new LinkedList<>();
 		RecommendationHelper recommendationHelper = new RecommendationHelper();
-		String fileName = recommendationHelper.createMovieFile(uid);
-		NeighbourBasedRatingRecommendation neighbourBasedRatingRecommendation = new NeighbourBasedRatingRecommendation(fileName);
-		List<RecommendedItem> recommendationItems = neighbourBasedRatingRecommendation.getRecommendation(3, uid, 25);
+		List<RecommendedItem> recommendationItems = recommendationHelper.getDataBasedRecommendation(uid);
 		for(RecommendedItem recommendedItem:recommendationItems){
-			IMDBData imdbData = new IMDBData();
-			IMDBData.MovieRecommendation imdb= imdbData.getImdb("http://www.omdbapi.com/", "i="+recommendedItem.getItemID());
-			imdb.setUserRating(String.valueOf(recommendedItem.getValue()));
-			movies.add(imdb);
+			movies.add(recommendationHelper.buildIMDBData(recommendedItem));
+		}
+		return movies;
+	}
+	
+	public List<IMDBData.MovieRecommendation> getMovieRecommendationByYear(long uid, List<String> years) throws ClassNotFoundException, SQLException, IOException, TasteException{
+		List<IMDBData.MovieRecommendation> movies = new LinkedList<>();
+		RecommendationHelper recommendationHelper = new RecommendationHelper();
+		String fileName = recommendationHelper.createMovieFile(uid, years, RecommenderConstant.YEAR);
+		List<RecommendedItem> recommendationItems = recommendationHelper.getFileBasedRecommendation(fileName, uid);
+		for(RecommendedItem recommendedItem:recommendationItems){
+			movies.add(recommendationHelper.buildIMDBData(recommendedItem));
+		}
+		return movies;
+	}
+	
+	public List<IMDBData.MovieRecommendation> getMovieRecommendationByAge(long uid, Integer ageGroupId) throws ClassNotFoundException, SQLException, IOException, TasteException{
+		List<IMDBData.MovieRecommendation> movies = new LinkedList<>();
+		RecommendationHelper recommendationHelper = new RecommendationHelper();
+		String fileName = recommendationHelper.createMovieFile(uid, ageGroupId, RecommenderConstant.AGE);
+		List<RecommendedItem> recommendationItems = recommendationHelper.getFileBasedRecommendation(fileName, uid);
+		for(RecommendedItem recommendedItem:recommendationItems){
+			movies.add(recommendationHelper.buildIMDBData(recommendedItem));
 		}
 		return movies;
 	}
